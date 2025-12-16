@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FotoSharp | Perbaikan Foto Blur</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-camera"></i>
+                <h1>FotoSharp</h1>
+            </div>
+            <p class="tagline">Aplikasi Perbaikan Foto Blur dengan Pengolahan Citra</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="section upload-section">
+                <div class="upload-box" id="drop-area">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h3>Upload Foto di Sini</h3>
+                    <p>Klik atau seret file gambar (JPG, PNG, GIF - Max 5MB)</p>
+                    <input type="file" id="image-input" accept="image/*">
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section class="section preview-section">
+                <div class="preview-container">
+                    <div class="preview-card">
+                        <h3><i class="fas fa-image"></i> Foto Asli</h3>
+                        <div class="image-container">
+                            <canvas id="before-canvas"></canvas>
+                            <div class="placeholder" id="before-placeholder">
+                                <i class="fas fa-image"></i>
+                                <p>Foto akan muncul di sini</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-card">
+                        <h3><i class="fas fa-magic"></i> Hasil Perbaikan</h3>
+                        <div class="image-container">
+                            <canvas id="after-canvas"></canvas>
+                            <div class="placeholder" id="after-placeholder">
+                                <i class="fas fa-wand-magic-sparkles"></i>
+                                <p>Pilih filter untuk melihat hasil</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Filter Controls -->
+            <section class="section controls-section">
+                <h2 class="section-title">Pilih Filter Perbaikan</h2>
+                
+                <div class="filter-grid">
+                    <!-- Filter 1: Sharpen -->
+                    <div class="filter-card">
+                        <div class="filter-icon sharpen">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <h4>Sharpen</h4>
+                        <p>Menajamkan gambar blur</p>
+                        <span class="filter-tag">Modul 6: Konvolusi</span>
+                        <button class="filter-btn" data-mode="sharpen">Terapkan</button>
+                    </div>
+                    
+                    <!-- Filter 2: Median Filter -->
+                    <div class="filter-card">
+                        <div class="filter-icon median">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <h4>Median Filter</h4>
+                        <p>Hilangkan noise/grain</p>
+                        <span class="filter-tag">Modul 7: Non-linear</span>
+                        <button class="filter-btn" data-mode="median">Terapkan</button>
+                    </div>
+                    
+                    <!-- Filter 3: Contrast -->
+                    <div class="filter-card">
+                        <div class="filter-icon contrast">
+                            <i class="fas fa-adjust"></i>
+                        </div>
+                        <h4>Contrast</h4>
+                        <p>Tingkatkan kontras gambar</p>
+                        <span class="filter-tag">Modul 3: Histogram</span>
+                        <button class="filter-btn" data-mode="contrast">Terapkan</button>
+                    </div>
+                    
+                    <!-- Filter 4: Unsharp Mask -->
+                    <div class="filter-card">
+                        <div class="filter-icon edge">
+                            <i class="fas fa-draw-polygon"></i>
+                        </div>
+                        <h4>Unsharp Mask</h4>
+                        <p>Perjelas detail halus</p>
+                        <span class="filter-tag">Modul 6: Konvolusi</span>
+                        <button class="filter-btn" data-mode="unsharp">Terapkan</button>
+                    </div>
+                </div>
+                
+                <!-- Intensity Control -->
+                <div class="intensity-control">
+                    <label for="intensity-slider">
+                        <i class="fas fa-sliders-h"></i>
+                        Kekuatan Filter: <span id="intensity-value">3</span>
+                    </label>
+                    <input type="range" id="intensity-slider" min="1" max="5" value="3">
+                    <div class="slider-labels">
+                        <span>Ringan</span>
+                        <span>Sedang</span>
+                        <span>Kuat</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="reset-btn" class="btn reset-btn">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                    <button id="download-btn" class="btn download-btn" disabled>
+                        <i class="fas fa-download"></i> Download Hasil
+                    </button>
+                </div>
+                
+                <!-- Info -->
+                <div class="info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <p><strong>Catatan:</strong> Upload foto dulu, lalu pilih filter. Hasil akan muncul di kanan.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p><i class="fas fa-code"></i> Implementasi Modul 3, 6, 7 - Pengolahan Citra Digital</p>
+            <p>FotoSharp © 2023 - Aplikasi Perbaikan Foto Blur</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

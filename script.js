@@ -1,4 +1,5 @@
-// script.js - FINAL WORKING VERSION - MEDIAN FILTER FIXED
+// script.js - MAIN FILE - Clean & Simple
+// FotoSharp - Aplikasi Pengolahan Citra Digital
 
 // Elements
 const imageInput = document.getElementById('image-input');
@@ -12,6 +13,9 @@ const intensityValue = document.getElementById('intensity-value');
 const resetBtn = document.getElementById('reset-btn');
 const downloadBtn = document.getElementById('download-btn');
 const filterButtons = document.querySelectorAll('.filter-btn');
+const themeToggle = document.getElementById('theme-toggle');
+const originalInfo = document.getElementById('original-info');
+const filterInfo = document.getElementById('filter-info');
 
 // Variables
 let originalImage = null;
@@ -21,8 +25,14 @@ let intensity = 3;
 let hasFilterApplied = false;
 
 // Initialize
-window.addEventListener('DOMContentLoaded', () => {
-    console.log('FotoSharp started');
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('FotoSharp - Aplikasi Pengolahan Citra');
+    console.log('Modul: 3, 6, dan 7');
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeToggle(savedTheme);
     
     // Set initial intensity
     intensityValue.textContent = intensitySlider.value;
@@ -41,60 +51,34 @@ function setupEvents() {
     setupDragDrop();
     
     // Intensity slider
-    intensitySlider.addEventListener('input', () => {
-        intensity = parseInt(intensitySlider.value);
-        intensityValue.textContent = intensity;
-        if (originalImage && hasFilterApplied) {
-            applyFilter(currentFilter);
-        }
-    });
+    intensitySlider.addEventListener('input', handleIntensityChange);
     
     // Reset button
-    resetBtn.addEventListener('click', () => {
-        if (originalImage) {
-            // Clear after canvas
-            const ctx = afterCanvas.getContext('2d');
-            ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
-            afterPlaceholder.style.display = 'flex';
-            
-            // Reset variables
-            processedImage = null;
-            currentFilter = null;
-            hasFilterApplied = false;
-            intensitySlider.value = 3;
-            intensity = 3;
-            intensityValue.textContent = '3';
-            
-            // Disable download until filter applied
-            downloadBtn.disabled = true;
-            
-            console.log('Reset completed');
-        }
-    });
+    resetBtn.addEventListener('click', resetApplication);
     
     // Download button
-    downloadBtn.addEventListener('click', () => {
-        if (!processedImage) {
-            alert('Pilih filter terlebih dahulu');
-            return;
-        }
-        const link = document.createElement('a');
-        link.download = `fotosharp_${currentFilter}_${Date.now()}.png`;
-        link.href = afterCanvas.toDataURL();
-        link.click();
-    });
+    downloadBtn.addEventListener('click', downloadResult);
+    
+    // Theme toggle
+    themeToggle.addEventListener('click', toggleTheme);
     
     // Filter buttons
     filterButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             if (!originalImage) {
-                alert('Upload gambar terlebih dahulu');
+                showMessage('Silakan upload gambar terlebih dahulu', 'warning');
                 return;
             }
             
             currentFilter = btn.dataset.mode;
             hasFilterApplied = true;
-            console.log(`Applying ${currentFilter} filter`);
+            
+            // Update filter info
+            const filterName = btn.querySelector('span').textContent;
+            filterInfo.textContent = filterName;
+            filterInfo.style.color = 'var(--primary-color)';
+            
+            console.log(`Menerapkan filter: ${currentFilter}`);
             applyFilter(currentFilter);
             
             // Enable download button
@@ -103,14 +87,27 @@ function setupEvents() {
     });
 }
 
-// Setup drag and drop
+// Handle drag and drop
 function setupDragDrop() {
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
         dropArea.addEventListener(event, e => e.preventDefault());
     });
     
+    dropArea.addEventListener('dragenter', () => {
+        dropArea.style.borderColor = 'var(--primary-color)';
+        dropArea.style.backgroundColor = 'var(--bg-secondary)';
+    });
+    
+    dropArea.addEventListener('dragleave', () => {
+        dropArea.style.borderColor = 'var(--border-color)';
+        dropArea.style.backgroundColor = 'var(--bg-tertiary)';
+    });
+    
     dropArea.addEventListener('drop', e => {
         e.preventDefault();
+        dropArea.style.borderColor = 'var(--border-color)';
+        dropArea.style.backgroundColor = 'var(--bg-tertiary)';
+        
         const files = e.dataTransfer.files;
         if (files.length > 0) handleFile(files[0]);
     });
@@ -123,14 +120,14 @@ function handleImageSelect(e) {
 
 // Process uploaded file
 function handleFile(file) {
-    // Validate
+    // Validate file
     if (!file.type.match('image.*')) {
-        alert('Hanya file gambar (JPG, PNG, GIF)');
+        showMessage('Hanya file gambar (JPG, PNG, GIF) yang diperbolehkan', 'error');
         return;
     }
     
     if (file.size > 5 * 1024 * 1024) {
-        alert('Maksimal 5MB');
+        showMessage('Ukuran file maksimal 5MB', 'error');
         return;
     }
     
@@ -141,8 +138,11 @@ function handleFile(file) {
             // Store original image
             originalImage = img;
             
-            // Display in before canvas only
+            // Display in before canvas
             displayImage(beforeCanvas, beforePlaceholder, img);
+            
+            // Update file info
+            originalInfo.textContent = `${img.width}×${img.height} • ${formatFileSize(file.size)}`;
             
             // Clear after canvas
             const ctx = afterCanvas.getContext('2d');
@@ -153,11 +153,13 @@ function handleFile(file) {
             processedImage = null;
             currentFilter = null;
             hasFilterApplied = false;
+            filterInfo.textContent = 'Tidak ada filter';
+            filterInfo.style.color = '';
             
             // Disable download until filter applied
             downloadBtn.disabled = true;
             
-            console.log('Image loaded. Select a filter to apply.');
+            showMessage('Gambar berhasil diupload! Pilih filter untuk memulai pengolahan.', 'success');
         };
         img.src = e.target.result;
     };
@@ -170,7 +172,7 @@ function displayImage(canvas, placeholder, img) {
     
     // Calculate dimensions
     const maxWidth = 450;
-    const maxHeight = 300;
+    const maxHeight = 280;
     
     let width = img.width;
     let height = img.height;
@@ -194,7 +196,7 @@ function displayImage(canvas, placeholder, img) {
 function applyFilter(filterName) {
     if (!originalImage) return;
     
-    console.log(`Processing ${filterName} with intensity ${intensity}`);
+    console.log(`Memproses filter ${filterName} dengan intensitas ${intensity}`);
     
     // Hide after placeholder
     afterPlaceholder.style.display = 'none';
@@ -215,221 +217,198 @@ function applyFilter(filterName) {
     
     // Apply selected filter
     let resultData;
-    switch(filterName) {
-        case 'sharpen':
-            resultData = applySharpenFilter(imageData);
-            break;
-        case 'median':
-            resultData = applyMedianFilter(imageData);
-            break;
-        case 'contrast':
-            resultData = applyContrastFilter(imageData);
-            break;
-        case 'unsharp':
-            resultData = applyUnsharpMask(imageData);
-            break;
-        default:
-            resultData = imageData;
+    const startTime = performance.now();
+    
+    try {
+        switch(filterName) {
+            case 'histogram':
+                resultData = applyHistogramEqualization(imageData);
+                break;
+            case 'sharpen':
+                resultData = applySharpenFilter(imageData, intensity);
+                break;
+            case 'median':
+                resultData = applyMedianFilter(imageData, intensity);
+                break;
+            case 'contrast':
+                resultData = applyContrastStretch(imageData);
+                break;
+            case 'unsharp':
+                resultData = applyUnsharpMask(imageData, intensity);
+                break;
+            case 'gaussian':
+                resultData = applyGaussianBlur(imageData, intensity);
+                break;
+            default:
+                resultData = imageData;
+        }
+        
+        // Put result back
+        tempCtx.putImageData(resultData, 0, 0);
+        
+        // Display result
+        const resultImg = new Image();
+        resultImg.onload = () => {
+            const ctx = afterCanvas.getContext('2d');
+            afterCanvas.width = tempCanvas.width;
+            afterCanvas.height = tempCanvas.height;
+            ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
+            ctx.drawImage(resultImg, 0, 0);
+            processedImage = resultImg;
+            
+            const processTime = performance.now() - startTime;
+            console.log(`Filter ${filterName} berhasil diterapkan (${processTime.toFixed(2)}ms)`);
+            
+            showMessage(`Filter berhasil diterapkan!`, 'success');
+        };
+        resultImg.src = tempCanvas.toDataURL();
+        
+    } catch (error) {
+        console.error(`Error menerapkan filter ${filterName}:`, error);
+        showMessage(`Terjadi kesalahan saat menerapkan filter`, 'error');
     }
+}
+
+// Handle intensity change
+function handleIntensityChange() {
+    intensity = parseInt(intensitySlider.value);
+    intensityValue.textContent = intensity;
     
-    // Put result back
-    tempCtx.putImageData(resultData, 0, 0);
-    
-    // Display result
-    const resultImg = new Image();
-    resultImg.onload = () => {
+    if (originalImage && hasFilterApplied) {
+        console.log(`Mengupdate intensitas filter ${currentFilter} ke ${intensity}`);
+        applyFilter(currentFilter);
+    }
+}
+
+// Reset application
+function resetApplication() {
+    if (originalImage) {
+        // Clear after canvas
         const ctx = afterCanvas.getContext('2d');
-        afterCanvas.width = tempCanvas.width;
-        afterCanvas.height = tempCanvas.height;
         ctx.clearRect(0, 0, afterCanvas.width, afterCanvas.height);
-        ctx.drawImage(resultImg, 0, 0);
-        processedImage = resultImg;
-        console.log(`${filterName} filter applied successfully`);
-    };
-    resultImg.src = tempCanvas.toDataURL();
+        afterPlaceholder.style.display = 'flex';
+        
+        // Reset variables
+        processedImage = null;
+        currentFilter = null;
+        hasFilterApplied = false;
+        intensitySlider.value = 3;
+        intensity = 3;
+        intensityValue.textContent = '3';
+        
+        // Update info
+        filterInfo.textContent = 'Tidak ada filter';
+        filterInfo.style.color = '';
+        
+        // Disable download
+        downloadBtn.disabled = true;
+        
+        console.log('Aplikasi direset');
+        showMessage('Aplikasi berhasil direset', 'info');
+    } else {
+        showMessage('Belum ada gambar yang diupload', 'warning');
+    }
 }
 
-// 1. Sharpen Filter - Working
-function applySharpenFilter(imageData) {
-    const width = imageData.width;
-    const height = imageData.height;
-    const data = imageData.data;
-    const output = new Uint8ClampedArray(data);
-    
-    // Sharpen strength
-    const strength = intensity * 0.1;
-    
-    // Simple sharpen kernel
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            const idx = (y * width + x) * 4;
-            
-            for (let c = 0; c < 3; c++) {
-                // Get immediate neighbors
-                const top = data[((y-1) * width + x) * 4 + c];
-                const bottom = data[((y+1) * width + x) * 4 + c];
-                const left = data[(y * width + (x-1)) * 4 + c];
-                const right = data[(y * width + (x+1)) * 4 + c];
-                const center = data[idx + c];
-                
-                // Simple sharpen formula
-                const sharpened = center + (center - (top + bottom + left + right) / 4) * strength;
-                
-                output[idx + c] = clamp(sharpened);
-            }
-            output[idx + 3] = data[idx + 3];
-        }
+// Download result
+function downloadResult() {
+    if (!processedImage) {
+        showMessage('Pilih filter terlebih dahulu sebelum download', 'warning');
+        return;
     }
     
-    return new ImageData(output, width, height);
+    const filterName = currentFilter || 'processed';
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `FotoSharp_${filterName}_${timestamp}.png`;
+    
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = afterCanvas.toDataURL('image/png');
+    link.click();
+    
+    console.log(`Download berhasil: ${filename}`);
+    showMessage('Gambar berhasil didownload!', 'success');
 }
 
-// 2. Median Filter - FIXED! (TIDAK BLUR)
-function applyMedianFilter(imageData) {
-    const width = imageData.width;
-    const height = imageData.height;
-    const data = imageData.data;
+// Toggle theme
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     
-    // Create output array (copy of original)
-    const output = new Uint8ClampedArray(data);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeToggle(newTheme);
     
-    // MEDIAN FILTER YANG BENAR:
-    // 1. Window size kecil (3x3) 
-    // 2. Hanya proses area yang noise, jangan semua
-    // 3. Gunakan threshold untuk deteksi noise
+    console.log(`Theme diubah ke: ${newTheme}`);
+}
+
+// Update theme toggle button
+function updateThemeToggle(theme) {
+    const icon = themeToggle.querySelector('i');
+    const text = themeToggle.querySelector('span');
     
-    const windowSize = 3; // Tetap kecil
-    const radius = Math.floor(windowSize / 2);
-    
-    // Iterasi melalui semua pixel kecuali border
-    for (let y = radius; y < height - radius; y++) {
-        for (let x = radius; x < width - radius; x++) {
-            const idx = (y * width + x) * 4;
-            
-            for (let c = 0; c < 3; c++) {
-                const center = data[idx + c];
-                const values = [];
-                
-                // Kumpulkan nilai tetangga
-                for (let dy = -radius; dy <= radius; dy++) {
-                    for (let dx = -radius; dx <= radius; dx++) {
-                        const neighborIdx = ((y + dy) * width + (x + dx)) * 4 + c;
-                        values.push(data[neighborIdx]);
-                    }
-                }
-                
-                // Hitung median
-                values.sort((a, b) => a - b);
-                const median = values[Math.floor(values.length / 2)];
-                
-                // Cek apakah pixel ini noise
-                // Noise biasanya memiliki perbedaan besar dengan tetangga
-                let isNoise = false;
-                let similarCount = 0;
-                
-                for (let i = 0; i < values.length; i++) {
-                    if (Math.abs(center - values[i]) < 30) { // Threshold
-                        similarCount++;
-                    }
-                }
-                
-                // Jika kurang dari 3 tetangga yang similar, kemungkinan noise
-                if (similarCount < 3) {
-                    output[idx + c] = median; // Ganti dengan median
-                } else {
-                    output[idx + c] = center; // Pertahankan asli
-                }
-            }
-            output[idx + 3] = data[idx + 3]; // Alpha channel
-        }
+    if (theme === 'dark') {
+        icon.className = 'fas fa-sun';
+        text.textContent = 'Mode Terang';
+    } else {
+        icon.className = 'fas fa-moon';
+        text.textContent = 'Mode Gelap';
     }
-    
-    return new ImageData(output, width, height);
 }
 
-// 3. Contrast Enhancement - Working
-function applyContrastFilter(imageData) {
-    const width = imageData.width;
-    const height = imageData.height;
-    const data = imageData.data;
-    const output = new Uint8ClampedArray(data);
+// Show message
+function showMessage(message, type = 'info') {
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.className = 'message';
+    messageEl.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? 'var(--success-color)' : 
+                     type === 'error' ? 'var(--danger-color)' : 
+                     type === 'warning' ? 'var(--warning-color)' : 'var(--primary-color)'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        font-size: 0.9rem;
+        animation: slideIn 0.3s ease;
+        max-width: 300px;
+    `;
+    messageEl.textContent = message;
     
-    // Simple contrast adjustment
-    const contrastFactor = 1.0 + (intensity * 0.15);
+    document.body.appendChild(messageEl);
     
-    for (let i = 0; i < data.length; i += 4) {
-        for (let c = 0; c < 3; c++) {
-            const value = data[i + c] / 255.0;
-            
-            // Apply contrast curve
-            let adjusted;
-            if (value < 0.5) {
-                adjusted = Math.pow(value, contrastFactor);
-            } else {
-                adjusted = 1 - Math.pow(1 - value, contrastFactor);
-            }
-            
-            output[i + c] = clamp(adjusted * 255);
-        }
-        output[i + 3] = data[i + 3];
+    // Remove after 3 seconds
+    setTimeout(() => {
+        messageEl.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            document.body.removeChild(messageEl);
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS for animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
-    
-    return new ImageData(output, width, height);
-}
-
-// 4. Unsharp Mask - Working
-function applyUnsharpMask(imageData) {
-    const width = imageData.width;
-    const height = imageData.height;
-    const data = imageData.data;
-    const output = new Uint8ClampedArray(data);
-    
-    // Step 1: Create blurred version
-    const blurred = new Uint8ClampedArray(data.length);
-    
-    // Simple box blur (lebih cepat dari Gaussian)
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            const idx = (y * width + x) * 4;
-            
-            for (let c = 0; c < 3; c++) {
-                // Average of 3x3 neighborhood
-                let sum = 0;
-                for (let dy = -1; dy <= 1; dy++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                        const neighborIdx = ((y + dy) * width + (x + dx)) * 4 + c;
-                        sum += data[neighborIdx];
-                    }
-                }
-                blurred[idx + c] = Math.round(sum / 9);
-            }
-            blurred[idx + 3] = data[idx + 3];
-        }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
     }
-    
-    // Step 2: Apply unsharp mask
-    const amount = intensity * 0.3;
-    
-    for (let i = 0; i < data.length; i += 4) {
-        for (let c = 0; c < 3; c++) {
-            const original = data[i + c];
-            const blur = blurred[i + c];
-            
-            // Unsharp mask formula
-            const sharpened = original + (original - blur) * amount;
-            output[i + c] = clamp(sharpened);
-        }
-        output[i + 3] = data[i + 3];
-    }
-    
-    return new ImageData(output, width, height);
+`;
+document.head.appendChild(style);
+
+// Helper: Format file size
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// Helper: Clamp value to 0-255
-function clamp(value) {
-    return Math.max(0, Math.min(255, Math.round(value)));
-}
-
-console.log('✅ FotoSharp ready!');
-console.log('Filters: sharpen, median, contrast, unsharp');
-console.log('Median Filter FIXED: tidak blur, hanya hilangkan noise');
+console.log('FotoSharp siap digunakan!');

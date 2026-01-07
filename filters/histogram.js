@@ -50,7 +50,7 @@ function applyHistogramEqualization(imageData, intensity) {
         output[i] = clamp(data[i] * (1 - blendFactor) + eqR * blendFactor);
         output[i + 1] = clamp(data[i + 1] * (1 - blendFactor) + eqG * blendFactor);
         output[i + 2] = clamp(data[i + 2] * (1 - blendFactor) + eqB * blendFactor);
-        output[i + 3] = data[i + 3]; // Alpha channel
+        output[i + 3] = data[i + 3]; 
     }
     
     return new ImageData(output, width, height);

@@ -167,20 +167,31 @@ function handleFile(file) {
 }
 
 // Display image on canvas
+// Display image on canvas
 function displayImage(canvas, placeholder, img) {
     placeholder.style.display = 'none';
     
-    // Calculate dimensions
-    const maxWidth = 450;
-    const maxHeight = 280;
+    // Dapatkan container parent
+    const container = canvas.parentElement;
+    const maxWidth = container.clientWidth;
+    const maxHeight = container.clientHeight;
     
     let width = img.width;
     let height = img.height;
     
-    // Scale to fit
+    // Hitung skala untuk mempertahankan aspect ratio
     const scale = Math.min(maxWidth / width, maxHeight / height);
-    width = Math.floor(width * scale);
-    height = Math.floor(height * scale);
+    
+    // Jika gambar lebih besar dari container, perkecil
+    if (scale < 1) {
+        width = Math.floor(width * scale);
+        height = Math.floor(height * scale);
+    }
+    // Jika gambar lebih kecil, biarkan ukuran asli tapi maksimal container
+    else {
+        width = Math.min(width, maxWidth);
+        height = Math.min(height, maxHeight);
+    }
     
     // Set canvas size
     canvas.width = width;

@@ -78,7 +78,7 @@ function setupEvents() {
             filterInfo.textContent = filterName;
             filterInfo.style.color = 'var(--primary-color)';
             
-            console.log(`Menerapkan filter: ${currentFilter}`);
+            console.log(`Menerapkan filter: ${currentFilter} dengan intensity: ${intensity}`);
             applyFilter(currentFilter);
             
             // Enable download button
@@ -167,7 +167,6 @@ function handleFile(file) {
 }
 
 // Display image on canvas
-// Display image on canvas
 function displayImage(canvas, placeholder, img) {
     placeholder.style.display = 'none';
     
@@ -203,11 +202,11 @@ function displayImage(canvas, placeholder, img) {
     ctx.drawImage(img, 0, 0, width, height);
 }
 
-// Apply filter to image
+// Apply filter - UPDATED: SEMUA FILTER SEKARANG PAKAI INTENSITY
 function applyFilter(filterName) {
     if (!originalImage) return;
     
-    console.log(`Memproses filter ${filterName} dengan intensitas ${intensity}`);
+    console.log(`Memproses filter: ${filterName} dengan intensity: ${intensity}`);
     
     // Hide after placeholder
     afterPlaceholder.style.display = 'none';
@@ -216,39 +215,38 @@ function applyFilter(filterName) {
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     
-    // Set size same as before canvas
+    // Set size
     tempCanvas.width = beforeCanvas.width;
     tempCanvas.height = beforeCanvas.height;
     
-    // Draw original image
+    // Draw original
     tempCtx.drawImage(originalImage, 0, 0, tempCanvas.width, tempCanvas.height);
     
     // Get image data
     const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
     
-    // Apply selected filter
+    // Apply filter - SEMUA PAKAI INTENSITY SEKARANG
     let resultData;
-    const startTime = performance.now();
     
     try {
         switch(filterName) {
             case 'histogram':
-                resultData = applyHistogramEqualization(imageData);
+                resultData = applyHistogramEqualization(imageData, intensity);
+                break;
+            case 'contrast':
+                resultData = applyContrastStretch(imageData, intensity);
                 break;
             case 'sharpen':
                 resultData = applySharpenFilter(imageData, intensity);
-                break;
-            case 'median':
-                resultData = applyMedianFilter(imageData, intensity);
-                break;
-            case 'contrast':
-                resultData = applyContrastStretch(imageData);
                 break;
             case 'unsharp':
                 resultData = applyUnsharpMask(imageData, intensity);
                 break;
             case 'gaussian':
                 resultData = applyGaussianBlur(imageData, intensity);
+                break;
+            case 'median':
+                resultData = applyMedianFilter(imageData, intensity);
                 break;
             default:
                 resultData = imageData;
@@ -267,16 +265,13 @@ function applyFilter(filterName) {
             ctx.drawImage(resultImg, 0, 0);
             processedImage = resultImg;
             
-            const processTime = performance.now() - startTime;
-            console.log(`Filter ${filterName} berhasil diterapkan (${processTime.toFixed(2)}ms)`);
-            
-            showMessage(`Filter berhasil diterapkan!`, 'success');
+            showMessage(`Filter ${filterName} berhasil diterapkan (Intensity: ${intensity})!`, 'success');
         };
         resultImg.src = tempCanvas.toDataURL();
         
     } catch (error) {
-        console.error(`Error menerapkan filter ${filterName}:`, error);
-        showMessage(`Terjadi kesalahan saat menerapkan filter`, 'error');
+        console.error(`Error: ${error.message}`);
+        showMessage(`Error: ${error.message}`, 'error');
     }
 }
 
@@ -330,7 +325,7 @@ function downloadResult() {
     
     const filterName = currentFilter || 'processed';
     const timestamp = new Date().toISOString().slice(0, 10);
-    const filename = `FotoSharp_${filterName}_${timestamp}.png`;
+    const filename = `FotoSharp_${filterName}_intensity${intensity}_${timestamp}.png`;
     
     const link = document.createElement('a');
     link.download = filename;

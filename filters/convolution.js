@@ -40,6 +40,71 @@ function applySharpenFilter(imageData, intensity) {
         }
     }
     
+    // Copy border pixels
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
+                const idx = (y * width + x) * 4;
+                output[idx] = data[idx];
+                output[idx + 1] = data[idx + 1];
+                output[idx + 2] = data[idx + 2];
+                output[idx + 3] = data[idx + 3];
+            }
+        }
+    }
+    
+    return new ImageData(output, width, height);
+}
+
+// Helper function untuk Gaussian blur (diperlukan untuk unsharp mask)
+function simpleGaussianBlur(imageData) {
+    const width = imageData.width;
+    const height = imageData.height;
+    const data = imageData.data;
+    const output = new Uint8ClampedArray(data.length);
+    
+    // Simple 3x3 Gaussian kernel
+    const kernel = [
+        1/16, 2/16, 1/16,
+        2/16, 4/16, 2/16,
+        1/16, 2/16, 1/16
+    ];
+    
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const idx = (y * width + x) * 4;
+            
+            for (let c = 0; c < 3; c++) {
+                let sum = 0;
+                let kIndex = 0;
+                
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const pixelIdx = ((y + ky) * width + (x + kx)) * 4 + c;
+                        sum += data[pixelIdx] * kernel[kIndex];
+                        kIndex++;
+                    }
+                }
+                
+                output[idx + c] = clamp(sum);
+            }
+            output[idx + 3] = data[idx + 3];
+        }
+    }
+    
+    // Copy border pixels
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
+                const idx = (y * width + x) * 4;
+                output[idx] = data[idx];
+                output[idx + 1] = data[idx + 1];
+                output[idx + 2] = data[idx + 2];
+                output[idx + 3] = data[idx + 3];
+            }
+        }
+    }
+    
     return new ImageData(output, width, height);
 }
 
@@ -50,8 +115,8 @@ function applyUnsharpMask(imageData, intensity) {
     const data = imageData.data;
     const output = new Uint8ClampedArray(data.length);
     
-    // Step 1: Buat gambar blur (Gaussian)
-    const blurred = applyGaussianBlur(imageData, 1); // Radius kecil
+    // Step 1: Buat gambar blur
+    const blurred = simpleGaussianBlur(imageData);
     
     // Step 2: Hitung mask (original - blurred)
     const mask = new Uint8ClampedArray(data.length);
@@ -113,6 +178,19 @@ function applyEdgeEnhancement(imageData, intensity) {
                 output[idx + c] = clamp(enhanced);
             }
             output[idx + 3] = data[idx + 3];
+        }
+    }
+    
+    // Copy border pixels
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
+                const idx = (y * width + x) * 4;
+                output[idx] = data[idx];
+                output[idx + 1] = data[idx + 1];
+                output[idx + 2] = data[idx + 2];
+                output[idx + 3] = data[idx + 3];
+            }
         }
     }
     

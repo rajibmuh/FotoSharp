@@ -1,22 +1,5 @@
 // linear.js - Implementasi MODUL 7: Linear Filtering (Gaussian Blur, Mean Filter)
 
-// Fungsi: Gaussian Blur (MODUL 7 - Linear Filtering)
-function applyGaussianBlur(imageData, intensity) {
-    const width = imageData.width;
-    const height = imageData.height;
-    const data = imageData.data;
-    
-    // Tentukan radius berdasarkan intensity (1-5)
-    const radius = Math.floor(intensity);
-    const kernelSize = radius * 2 + 1;
-    
-    // Buat Gaussian kernel
-    const kernel = createGaussianKernel(kernelSize, intensity * 0.5);
-    
-    // Terapkan konvolusi dengan kernel Gaussian
-    return applyConvolution(imageData, kernel);
-}
-
 // Helper: Buat Gaussian kernel
 function createGaussianKernel(size, sigma) {
     const kernel = [];
@@ -35,6 +18,23 @@ function createGaussianKernel(size, sigma) {
     
     // Normalisasi kernel
     return kernel.map(val => val / sum);
+}
+
+// Fungsi: Gaussian Blur (MODUL 7 - Linear Filtering)
+function applyGaussianBlur(imageData, intensity) {
+    const width = imageData.width;
+    const height = imageData.height;
+    const data = imageData.data;
+    
+    // Tentukan radius berdasarkan intensity (1-5)
+    const radius = Math.floor(intensity);
+    const kernelSize = radius * 2 + 1;
+    
+    // Buat Gaussian kernel
+    const kernel = createGaussianKernel(kernelSize, intensity * 0.5);
+    
+    // Terapkan konvolusi dengan kernel Gaussian
+    return applyConvolution(imageData, kernel);
 }
 
 // Fungsi: Mean Filter (MODUL 7 - Linear Filtering)

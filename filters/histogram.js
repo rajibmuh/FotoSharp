@@ -1,7 +1,7 @@
 // histogram.js - Implementasi MODUL 3 & 6: Histogram Equalization & Contrast Stretch
 
-// Fungsi utama: Histogram Equalization (MODUL 6)
-function applyHistogramEqualization(imageData) {
+// Fungsi utama: Histogram Equalization (MODUL 6) - SEKARANG PAKAI INTENSITY
+function applyHistogramEqualization(imageData, intensity) {
     const width = imageData.width;
     const height = imageData.height;
     const data = imageData.data;
@@ -37,19 +37,27 @@ function applyHistogramEqualization(imageData) {
         lookupB[i] = clamp((cumB[i] / totalPixels) * 255);
     }
     
-    // 5. Terapkan equalization ke setiap pixel
+    // 5. Terapkan equalization dengan blending berdasarkan intensity
+    // Intensity 1 = 20% effect, Intensity 5 = 100% effect
+    const blendFactor = (intensity / 5); // 0.2, 0.4, 0.6, 0.8, 1.0
+    
     for (let i = 0; i < data.length; i += 4) {
-        output[i] = lookupR[data[i]];
-        output[i + 1] = lookupG[data[i + 1]];
-        output[i + 2] = lookupB[data[i + 2]];
+        // Blend antara original dan equalized
+        const eqR = lookupR[data[i]];
+        const eqG = lookupG[data[i + 1]];
+        const eqB = lookupB[data[i + 2]];
+        
+        output[i] = clamp(data[i] * (1 - blendFactor) + eqR * blendFactor);
+        output[i + 1] = clamp(data[i + 1] * (1 - blendFactor) + eqG * blendFactor);
+        output[i + 2] = clamp(data[i + 2] * (1 - blendFactor) + eqB * blendFactor);
         output[i + 3] = data[i + 3]; // Alpha channel
     }
     
     return new ImageData(output, width, height);
 }
 
-// Fungsi: Contrast Stretching (MODUL 3)
-function applyContrastStretch(imageData) {
+// Fungsi: Contrast Stretching (MODUL 3) - SEKARANG PAKAI INTENSITY
+function applyContrastStretch(imageData, intensity) {
     const width = imageData.width;
     const height = imageData.height;
     const data = imageData.data;
@@ -74,11 +82,21 @@ function applyContrastStretch(imageData) {
     const rangeG = maxG - minG || 1;
     const rangeB = maxB - minB || 1;
     
-    // 3. Terapkan contrast stretching formula
+    // 3. Terapkan contrast stretching dengan intensity
+    // Intensity mengontrol seberapa agresif stretch-nya
+    // Intensity rendah = stretch lembut, Intensity tinggi = stretch penuh
+    const stretchFactor = intensity / 5; // 0.2 sampai 1.0
+    
     for (let i = 0; i < data.length; i += 4) {
-        output[i] = clamp(((data[i] - minR) / rangeR) * 255);
-        output[i + 1] = clamp(((data[i + 1] - minG) / rangeG) * 255);
-        output[i + 2] = clamp(((data[i + 2] - minB) / rangeB) * 255);
+        // Hitung stretched value
+        const stretchedR = ((data[i] - minR) / rangeR) * 255;
+        const stretchedG = ((data[i + 1] - minG) / rangeG) * 255;
+        const stretchedB = ((data[i + 2] - minB) / rangeB) * 255;
+        
+        // Blend dengan original berdasarkan intensity
+        output[i] = clamp(data[i] * (1 - stretchFactor) + stretchedR * stretchFactor);
+        output[i + 1] = clamp(data[i + 1] * (1 - stretchFactor) + stretchedG * stretchFactor);
+        output[i + 2] = clamp(data[i + 2] * (1 - stretchFactor) + stretchedB * stretchFactor);
         output[i + 3] = data[i + 3]; // Alpha channel
     }
     

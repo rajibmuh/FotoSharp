@@ -27,7 +27,9 @@ let hasFilterApplied = false;
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('FotoSharp - Aplikasi Pengolahan Citra');
-    console.log('Modul: 3, 6, dan 7');
+    console.log('Modul 3: Transformasi Citra (Contrast Stretch, Brightness Adjustment)');
+    console.log('Modul 6: Histogram Equalization & Konvolusi (Histogram EQ, Sharpen Filter)');
+    console.log('Modul 7: Filter Linear & Non-linear (Gaussian Blur, Median Filter)');
     
     // Load saved theme
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -202,7 +204,7 @@ function displayImage(canvas, placeholder, img) {
     ctx.drawImage(img, 0, 0, width, height);
 }
 
-// Apply filter - UPDATED: SEMUA FILTER SEKARANG PAKAI INTENSITY
+// Apply filter - SEMUA FILTER SEKARANG PAKAI INTENSITY
 function applyFilter(filterName) {
     if (!originalImage) return;
     
@@ -230,24 +232,30 @@ function applyFilter(filterName) {
     
     try {
         switch(filterName) {
-            case 'histogram':
-                resultData = applyHistogramEqualization(imageData, intensity);
-                break;
+            // MODUL 3: Transformasi Citra
             case 'contrast':
                 resultData = applyContrastStretch(imageData, intensity);
+                break;
+            case 'brightness':
+                resultData = applyBrightnessAdjustment(imageData, intensity);
+                break;
+            
+            // MODUL 6: Histogram Equalization & Konvolusi
+            case 'histogram':
+                resultData = applyHistogramEqualization(imageData, intensity);
                 break;
             case 'sharpen':
                 resultData = applySharpenFilter(imageData, intensity);
                 break;
-            case 'unsharp':
-                resultData = applyUnsharpMask(imageData, intensity);
-                break;
+            
+            // MODUL 7: Filter Linear & Non-linear
             case 'gaussian':
                 resultData = applyGaussianBlur(imageData, intensity);
                 break;
             case 'median':
                 resultData = applyMedianFilter(imageData, intensity);
                 break;
+            
             default:
                 resultData = imageData;
         }
